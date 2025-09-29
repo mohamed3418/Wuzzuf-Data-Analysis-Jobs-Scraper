@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<AlteryxDocument yxmdVer="2024.1" RunE2="T">
+  <Nodes>
+    <Node ToolID="1">
+      <GuiSettings Plugin="JupyterCode">
+        <Position x="330" y="54" />
+      </GuiSettings>
+      <Properties>
+        <Configuration>
+          <WorkflowName>c:\users\mohamed.beshier\appdata\local\alteryx\bin\new workflow2</WorkflowName>
+          <JupyterProduction>false</JupyterProduction>
+          <vEnvName>designerbasetools_venv</vEnvName>
+          <DefaultVenv>1</DefaultVenv>
+          <productionModeScript />
+          <Port>58836</Port>
+          <JupyterGuidDir>c8663be01b3154981a62fe96e437e200</JupyterGuidDir>
+          <JupyterGuidCopy />
+          <LastExecutedByEngineVersion>*</LastExecutedByEngineVersion>
+          <Notebook><![CDATA[{"cells":[{"metadata":{"ayx":{"cell_css":"border: 3px solid #357; margin: 4px; background: #fbffff","contents_keyword":"Alteryx.help()","label":"info"}},"cell_type":"markdown","source":["Run `Alteryx.help()` for info about useful functions.  \n","i.e., `Alteryx.read(\"#1\")`, `Alteryx.write(df,1)`, `Alteryx.getWorkflowConstant(\"Engine.WorkflowDirectory\")`"]},{"metadata":{},"cell_type":"code","source":["# =============================\n","# 📌 IMPORT REQUIRED LIBRARIES\n","# =============================\n","from bs4 import BeautifulSoup as bs           # For parsing HTML pages\n","from urllib.request import urlopen            # For opening URLs\n","import pandas as pd                           # For working with data as DataFrames\n","import math                                   # For ceiling calculation of total pages\n","\n","# ============================================================\n","# 🌐 INITIAL URL (page 1) — Last week jobs for \"Data Analyst\"\n","# ============================================================\n","base_url = 'https://wuzzuf.net/search/jobs/?a=navbg&filters%5Bpost_date%5D%5B0%5D=within_1_week&q=data%20analyst&start=0'\n","\n","# ====================================\n","# 🌟 STEP 1: Open the first page to\n","# determine total number of pages\n","# ====================================\n","client = urlopen(base_url)                   # Open URL connection\n","html = client.read()                         # Read the HTML content\n","soup = bs(html, \"html.parser\")               # Parse it with BeautifulSoup\n","\n","# ==================================================\n","# 🔢 STEP 2: Find total number of jobs & pages\n","# e.g. \"Showing 1 - 15 of 395\"\n","# ==================================================\n","pages = soup.findAll(\"li\", {\"class\": \"css-18k4nsw\"})  # Find the text containing pagination info\n","text = pages[0].text                                # Extract the text\n","parts = text.split()                                # Split into words\n","page_size = int(parts[3])                           # \"15\" in \"Showing 1 - 15 of 395\"\n","total_num = int(parts[5])                           # \"395\" in \"Showing 1 - 15 of 395\"\n","total_pages = math.ceil(total_num / page_size)      # Calculate total pages\n","\n","print(f\"Total pages found: {total_pages} with {total_num} Job\")\n","\n","# ======================================================\n","# 📄 STEP 3: Create an empty list to store scraped data\n","# ======================================================\n","jobs_data = []  # Will hold dictionaries for each job row\n","\n","# =======================================================\n","# 🌀 STEP 4: Loop through all pages and scrape each one\n","# =======================================================\n","for pagenum in range(total_pages):\n","    # Build URL for each page (0, 1, 2, ...)\n","    url = f'https://wuzzuf.net/search/jobs/?a=navbg&filters%5Bpost_date%5D%5B0%5D=within_1_week&q=data%20analyst&start={pagenum}'\n","    print(f\"Scraping page {pagenum+1}: {url}\")\n","\n","    try:\n","        # -------------------------------\n","        # 🌐 Fetch and parse each page\n","        # -------------------------------\n","        client = urlopen(url)\n","        html = client.read()\n","        soup = bs(html, \"html.parser\")\n","\n","        # ======================================\n","        # 📌 Find all job cards on the page\n","        # ======================================\n","        containers = soup.findAll(\"div\", {\"class\": \"css-ghe2tq e1v1l3u10\"})\n","        if not containers:\n","            print(f\"No job cards found on page {pagenum+1}\")\n","            continue\n","\n","        # ======================================================\n","        # 📥 STEP 5: Extract information from each job container\n","        # ======================================================\n","        for container in containers:\n","\n","            # 🧠 Job Title\n","            jtitle = container.findAll(\"h2\", {\"class\": \"css-193uk2c\"})\n","            jobtitle = jtitle[0].text.strip() if jtitle else \"\"\n","\n","            # 🏢 Company Name\n","            cname = container.findAll(\"a\", {\"class\": \"css-17s97q8\"})\n","            if not cname:\n","                cname = container.findAll(\"a\", {\"class\": \"css-ipsyv7\"})\n","            company_name = cname[0].text.strip('-') if cname else \"\"\n","\n","            # 📋 Job Type\n","            jtype = container.findAll(\"span\", {\"class\": \"css-uc9rga eoyjyou0\"})\n","            job_type = jtype[0].text.strip() if jtype else \"\"\n","\n","            # 🕒 Listing Time\n","            Ltime = container.findAll(\"div\", {\"class\": \"css-1jldrig\"})\n","            if not Ltime:\n","                Ltime = container.findAll(\"div\", {\"class\": \"css-eg55jf\"})\n","            listing_time = Ltime[0].text.strip() if Ltime else \"\"\n","\n","            # 📍 Location\n","            location = container.findAll(\"span\", {\"class\": \"css-16x61xq\"})\n","            job_location = location[0].text.strip() if jtype else \"\"\n","\n","            # 🔗 Job Link\n","            jlink = container.findAll(\"a\", {\"class\": \"css-o171kl\"})\n","            job_link = jlink[0].get(\"href\")\n","\n","            # ➕ Add the job as a dictionary to the list\n","            jobs_data.append({\n","                \"Job_title\": jobtitle,\n","                \"Company_name\": company_name,\n","                \"Job_type\": job_type,\n","                \"Job_Location\": job_location,\n","                \"Listing_Time\": listing_time,\n","                \"job_link\": job_link\n","            })\n","\n","    except Exception as e:\n","        # Handle any error during page scraping\n","        print(f\"Error on page {pagenum+1}: {e}\")\n","\n","# =========================================================\n","# ✅ STEP 5: Convert collected data into a Pandas DataFrame\n","# =========================================================\n","df = pd.DataFrame(jobs_data)\n","print(\"\\n✅ Scraping finished. DataFrame created successfully!\")\n","print(df.head())\n","\n","# Optional: Show basic DataFrame info\n","print(\"\\nDataFrame Info:\")\n","print(df.info())\n"],"execution_count":1,"outputs":[]},{"metadata":{"ayx":{"cell_css":"border: 1px solid #58a; margin: 2px;","contents_keyword":"installPackages","label":"deps"}},"cell_type":"code","source":["# List all non-standard packages to be imported by your \n","# script here (only missing packages will be installed)\n","from ayx import Package\n","#Package.installPackages(['pandas','numpy'])"],"execution_count":2,"outputs":[]},{"metadata":{},"cell_type":"code","source":["from ayx import Alteryx\n","\n","# and then send it to one of the output anchors\n","Alteryx.write(df, 1)"],"execution_count":3,"outputs":[]},{"metadata":{},"cell_type":"code","source":[],"execution_count":null,"outputs":[]},{"metadata":{},"cell_type":"code","source":[],"execution_count":null,"outputs":[]},{"metadata":{},"cell_type":"code","source":[],"execution_count":null,"outputs":[]},{"metadata":{},"cell_type":"code","source":[],"execution_count":null,"outputs":[]}],"metadata":{"kernelspec":{"name":"designerbasetools_venv","display_name":"designerbasetools_venv","language":"python"},"language_info":{"name":"python","version":"3.10.13","mimetype":"text/x-python","codemirror_mode":{"name":"ipython","version":3},"pygments_lexer":"ipython3","nbconvert_exporter":"python","file_extension":".py"}},"nbformat":4,"nbformat_minor":2}]]></Notebook>
+        </Configuration>
+        <Annotation DisplayMode="0">
+          <Name />
+          <DefaultAnnotationText />
+          <Left value="False" />
+        </Annotation>
+      </Properties>
+      <EngineSettings EngineDll="AlteryxJupyterPluginEngine.dll" EngineDllEntryPoint="AlteryxJupyter" />
+    </Node>
+  </Nodes>
+  <Connections />
+  <Properties>
+    <Memory default="True" />
+    <GlobalRecordLimit value="0" />
+    <TempFiles default="True" />
+    <Annotation on="True" includeToolName="False" />
+    <ConvErrorLimit value="10" />
+    <ConvErrorLimit_Stop value="False" />
+    <CancelOnError value="False" />
+    <DisableBrowse value="False" />
+    <EnablePerformanceProfiling value="False" />
+    <RunWithE2 value="True" />
+    <PredictiveToolsCodePage value="1252" />
+    <DisableAllOutput value="False" />
+    <ShowAllMacroMessages value="False" />
+    <ShowConnectionStatusIsOn value="True" />
+    <ShowConnectionStatusOnlyWhenRunning value="True" />
+    <ZoomLevel value="0" />
+    <LayoutType>Horizontal</LayoutType>
+    <IsTemplate value="False" />
+    <MetaInfo>
+      <NameIsFileName value="True" />
+      <Name>Wazzaf_Scrapping</Name>
+      <Description />
+      <RootToolName />
+      <ToolVersion />
+      <ToolInDb value="False" />
+      <CategoryName />
+      <SearchTags />
+      <Author />
+      <Company />
+      <Copyright />
+      <DescriptionLink actual="" displayed="" />
+      <Example>
+        <Description />
+        <File />
+      </Example>
+      <WorkflowId value="db565b4b-a5e7-4f30-8e11-e857e05ac9c6" />
+      <Telemetry>
+        <PreviousWorkflowId value="4af8f6ac-6ec9-4d46-9fae-44084e94a050" />
+        <OriginWorkflowId value="4af8f6ac-6ec9-4d46-9fae-44084e94a050" />
+      </Telemetry>
+      <PlatformWorkflowId value="" />
+    </MetaInfo>
+    <Events>
+      <Enabled value="True" />
+    </Events>
+  </Properties>
+</AlteryxDocument>
